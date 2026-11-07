@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autómatas y relé programable: Definición</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+
+<body>
+
+    <header>
+        <h1> Autómatas y relés programables</h1>
+        <p>Práctica 5. Vivienda con control de alarma y persianas. Autómata programable</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Práctica 5 (Vivienda)</a></li>
+            <li><a href="rubrica_5.html">Rúbrica evaluación</a></li> 
+            <li class="active"><a href="automata_5.html">Autómata programable</a></li>
+            <li><a href="logo_5.html">Logo</a></li>
+            <li><a href="presupuesto.html">Presupuesto</a></li>
+            <li><a href="glosario.html">Glosario</a></li>
+            <li><a href="prl.html">Seguridad y PRL</a></li>   
+        </ul>
+    </nav>
+
+    <div class="container">
+<h2>5.- Vivienda con control de alarma y persianas</h2>
+
+        <div class="section">
+                        
+<h3 class="section-header">1. Asignación de señales en el autómata programable.</h3>
+
+          <ul>
+           <p><strong>Entradas digitales</strong></p>
+           <li>I0.0: Pulsador marcha (S1) — contacto NO.</li>
+           <li>I0.1: Pulsador paro (S1) — contacto NC.</li>
+           <li>I0.2: Pulsador marcha (S2) — contacto NO.</li>
+           <li>I0.3: Pulsador paro (S2) — contacto NC.</li>
+           <li>I0.4: Pulsador marcha (S3) — contacto NO.</li>
+           <li>I0.5: Pulsador paro (S3) — contacto NC.</li>
+           <li>I0.6: Pulsador marcha (S4) — contacto NO. Orden de subir.</li>
+           <li>I0.7: Pulsador paro (S4) — contacto NC. Orden de bajar (ver nota).</li>
+           <li>I1.0: Detector de movimiento (DM) — contacto del contactor KM1 que adapta la señal del detector.</li>
+
+           <p><strong>Salidas digitales</strong></p>
+           <li>Q0.0: Piloto verde (PV).</li>
+           <li>Q0.1: Piloto rojo (PR).</li>
+           <li>Q0.2: Piloto verde alarma (PVA).</li>
+           <li>Q0.3: Lámpara de alarma (L1).</li>
+           <li>Q0.4: Lámpara del detector (L2).</li>
+           <li>Q0.5: Contactor KM2 — subir persiana.</li>
+           <li>Q0.6: Contactor KM3 — bajar persiana.</li>
+          </ul>
+
+<h3 class="section-header">2. Programa en Ladder (S7-200)</h3>
+            <table>
+                <thead>
+                    <tr><th>Bloque / Segmento</th><th>Lógica</th><th>Función</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>Segm. 1</strong></td><td>I0.0 → S M0.0 (1) &nbsp;|&nbsp; /I0.1 → R M0.0 (1)</td><td>Memoria de circuito activado</td></tr>
+                    <tr><td><strong>Segm. 2</strong></td><td>M0.0 → Q0.0 &nbsp;|&nbsp; /M0.0 → Q0.1</td><td>Piloto verde / piloto rojo</td></tr>
+                    <tr><td><strong>Segm. 3</strong></td><td>I0.2 → TON T37, PT = 50 (5 s)</td><td>Detecta pulsación larga de S2</td></tr>
+                    <tr><td><strong>Segm. 4</strong></td><td>T37 → S M0.2 &nbsp;|&nbsp; I0.2 + flanco P → R M0.2</td><td>Recuerda que la pulsación fue larga</td></tr>
+                    <tr><td><strong>Segm. 5</strong></td><td>I0.2 + flanco N + /M0.2 → conmuta M0.1</td><td>Pulsación corta de S2: L2 permanente ON/OFF</td></tr>
+                    <tr><td><strong>Segm. 6</strong></td><td>T37 + flanco P → S M0.3 &nbsp;|&nbsp; M0.3 → TON T38, PT = 600 (60 s) &nbsp;|&nbsp; T38 → R M0.3</td><td>L2 encendida 1 minuto</td></tr>
+                    <tr><td><strong>Segm. 7</strong></td><td>/I0.3 + /M0.0 → R M0.1, R M0.3</td><td>Paro de S2 o del circuito apaga L2</td></tr>
+                    <tr><td><strong>Segm. 8</strong></td><td>M0.0 · (I1.0 + M0.1 + M0.3) → Q0.4</td><td>Salida lámpara del detector L2</td></tr>
+                    <tr><td><strong>Segm. 9</strong></td><td>M0.0 · I0.4 + flanco P → conmuta M0.4 (telerruptor)</td><td>S3: activar / desactivar la alarma</td></tr>
+                    <tr><td><strong>Segm. 10</strong></td><td>/I0.5 + /M0.0 → R M0.4 (1)</td><td>Paro de S3 o del circuito desactiva la alarma</td></tr>
+                    <tr><td><strong>Segm. 11</strong></td><td>M0.4 → Q0.2</td><td>Piloto verde de alarma activada</td></tr>
+                    <tr><td><strong>Segm. 12</strong></td><td>M0.4 · I1.0 → S M0.5 (1) &nbsp;|&nbsp; /M0.4 → R M0.5 (1) &nbsp;|&nbsp; M0.5 → Q0.3</td><td>Disparo y enclavamiento de la alarma L1</td></tr>
+                    <tr><td><strong>Segm. 13</strong></td><td>M0.0 · I0.6 + flanco P → conmuta M1.0 &nbsp;|&nbsp; Q0.6 → R M1.0</td><td>Marcha/parada de la subida (S4 marcha)</td></tr>
+                    <tr><td><strong>Segm. 14</strong></td><td>M0.0 · /I0.7 + flanco P → conmuta M1.1 &nbsp;|&nbsp; Q0.5 → R M1.1</td><td>Marcha/parada de la bajada (S4 paro)</td></tr>
+                    <tr><td><strong>Segm. 15</strong></td><td>/M0.0 → R M1.0, R M1.1</td><td>El paro del circuito detiene la persiana</td></tr>
+                    <tr><td><strong>Segm. 16</strong></td><td>M1.0 · /Q0.6 → Q0.5 &nbsp;|&nbsp; M1.1 · /Q0.5 → Q0.6</td><td>Subir / bajar con enclavamiento mutuo</td></tr>
+                </tbody>
+            </table>
+            <p>La conmutación del telerruptor (segmentos 5 y 9) se programa con la combinación habitual de flanco y memorias: con el flanco, si la memoria está a 0 se pone a 1 y si está a 1 se pone a 0.</p>
+
+<p><strong>Nota:</strong> en el esquema del S7-200 solo hay cuatro pulsadores, así que la persiana se maneja con S4: el botón verde (I0.6) sube y el rojo (I0.7, contacto NC) baja. Cada orden se detiene volviendo a pulsar el mismo botón. Para tener S5 como en el LOGO! habría que cablearlo en I1.1 (marcha) e I1.2 (paro).</p>
+
+<h3 class="section-header">3. Esquema</h3>
+<p><strong>Esquema multifilar de la práctica 5.</strong></p>
+        
+<div class="automata-image">
+     <img id="myImg" class="esquema-ajustado" src="images_1/multifilar_automata_5.png" alt="Autómata S7 200 CPU200" style="cursor: pointer;">
+</div>
+
+          </div>
+<div id="myModal" class="modal">
+
+  <span class="close">&times;</span>
+
+  <img class="modal-content" id="img01">
+
+  <div id="caption"></div>
+
+</div>
+<script>
+// Obtener el modal
+var modal = document.getElementById("myModal");
+
+// Obtener la imagen y el elemento dentro del modal
+var img = document.getElementById("myImg");
+var modalImg = document.getElementById("img01");
+var captionText = document.getElementById("caption");
+
+img.onclick = function(){
+  modal.style.display = "block";
+  modalImg.src = this.src;
+  captionText.innerHTML = this.alt;
+}
+
+// Obtener el elemento <span> que cierra el modal
+var span = document.getElementsByClassName("close")[0];
+
+// Cuando el usuario hace clic en <span> (x), cierra el modal
+span.onclick = function() { 
+  modal.style.display = "none";
+}
+
+// Opcional: Cerrar el modal al hacer clic en cualquier parte fuera de la imagen
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+</script>
+</body>
+</html>

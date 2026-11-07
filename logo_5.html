@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autómatas y relé programable: Logo</title>
+    <link rel="stylesheet" href="css/estilos.css">
+</head>
+
+<body>
+
+    <header>
+        <h1> Autómatas y relés programables</h1>
+        <p>Práctica 5. Vivienda con control de alarma y persianas. Logo</p>
+    </header>
+
+    <nav>
+        <ul>
+            <li><a href="index.html">Práctica 5 (Vivienda)</a></li>
+            <li><a href="rubrica_5.html">Rúbrica evaluación</a></li> 
+            <li><a href="automata_5.html">Autómata programable</a></li>
+            <li class="active"><a href="logo_5.html">Logo</a></li>
+            <li><a href="presupuesto.html">Presupuesto</a></li>
+            <li><a href="glosario.html">Glosario</a></li>
+            <li><a href="prl.html">Seguridad y PRL</a></li>
+        </ul>
+    </nav>
+
+    <div class="container">
+<h2>5.- Vivienda con control de alarma y persianas</h2>
+
+        <div class="section">
+                        
+<h3 class="section-header">1. Asignación de señales en el relé programable.</h3>
+
+          <ul>
+           <p><strong>Entradas digitales</strong></p>
+           <li>I1: Pulsador marcha (S1) — contacto NO.</li>
+           <li>I2: Pulsador paro (S1) — contacto NC.</li>
+           <li>I3: Pulsador marcha (S2) — contacto NO.</li>
+           <li>I4: Pulsador paro (S2) — contacto NC.</li>
+           <li>I5: Pulsador marcha (S3) — contacto NO.</li>
+           <li>I6: Pulsador paro (S3) — contacto NC.</li>
+           <li>I7: Pulsador marcha (S4) — contacto NO. Subir persiana.</li>
+           <li>I8: Pulsador paro (S4) — contacto NC. Final de carrera de subida.</li>
+           <li>I9: Detector de movimiento (DM) — entrada I1 del módulo de ampliación DM8 230R.</li>
+           <li>I10: Pulsador marcha (S5) — contacto NO. Bajar persiana (entrada I2 del módulo).</li>
+           <li>I11: Pulsador paro (S5) — contacto NC. Final de carrera de bajada (entrada I3 del módulo).</li>
+
+           <p><strong>Salidas digitales</strong></p>
+           <li>Q1: Piloto verde (PV).</li>
+           <li>Q2: Piloto rojo (PR).</li>
+           <li>Q3: Piloto verde alarma (PVA).</li>
+           <li>Q4: Lámpara de alarma (L1).</li>
+           <li>Q5: Lámpara del detector (L2) — salida Q1 del módulo de ampliación.</li>
+           <li>Q6: Contactor KM1 — subir persiana (salida Q2 del módulo).</li>
+           <li>Q7: Contactor KM2 — bajar persiana (salida Q3 del módulo).</li>
+          </ul>
+
+<h3 class="section-header">2. Programa en FUP (LOGO!Soft Comfort)</h3>
+            <table>
+                <thead>
+                    <tr><th>Bloque / Segmento</th><th>Lógica</th><th>Función</th></tr>
+                </thead>
+                <tbody>
+                    <tr><td><strong>B001 RS</strong></td><td>S = I1 &nbsp;|&nbsp; R = NOT I2</td><td>Circuito activado → Q1; NOT B001 → Q2</td></tr>
+                    <tr><td><strong>B002 Retardo a la conexión</strong></td><td>Trg = I3, T = 5 s</td><td>Detecta pulsación larga de S2</td></tr>
+                    <tr><td><strong>B003 RS</strong></td><td>S = B002 &nbsp;|&nbsp; R = flanco ascendente de I3</td><td>Memoriza que la pulsación fue larga</td></tr>
+                    <tr><td><strong>B004 Relé de impulsos</strong></td><td>Trg = flanco descendente de I3 AND NOT B003 &nbsp;|&nbsp; R = NOT I4 OR NOT B001</td><td>Pulsación corta de S2: L2 permanente ON/OFF</td></tr>
+                    <tr><td><strong>B005 Retardo a la desconexión</strong></td><td>Trg = B002, T = 1 min &nbsp;|&nbsp; R = NOT I4 OR NOT B001</td><td>L2 encendida 1 minuto</td></tr>
+                    <tr><td><strong>B006 AND / OR</strong></td><td>Q5 = B001 AND (I9 OR B004 OR B005)</td><td>Salida lámpara del detector L2</td></tr>
+                    <tr><td><strong>B007 Relé de impulsos</strong></td><td>Trg = I5 AND B001 &nbsp;|&nbsp; R = NOT I6 OR NOT B001</td><td>S3: activar / desactivar la alarma → Q3</td></tr>
+                    <tr><td><strong>B008 RS</strong></td><td>S = B007 AND I9 &nbsp;|&nbsp; R = NOT B007</td><td>Disparo y enclavamiento de la alarma → Q4</td></tr>
+                    <tr><td><strong>B009 RS</strong></td><td>S = I7 AND B001 AND NOT B010 &nbsp;|&nbsp; R = NOT I8 OR NOT B001 OR flanco de I7 con B009 activo</td><td>Subida de la persiana → Q6 (KM1)</td></tr>
+                    <tr><td><strong>B010 RS</strong></td><td>S = I10 AND B001 AND NOT B009 &nbsp;|&nbsp; R = NOT I11 OR NOT B001 OR flanco de I10 con B010 activo</td><td>Bajada de la persiana → Q7 (KM2)</td></tr>
+                </tbody>
+            </table>
+            <p>Los flancos se obtienen con los bloques «Flanco ascendente/descendente». Las salidas Q1…Q4 son del LOGO! base y Q5…Q7 son las salidas Q1…Q3 del módulo DM8 230R. Los bloques B009 y B010 se enclavan entre sí para que KM1 y KM2 nunca actúen a la vez.</p>
+
+
+
+<h3 class="section-header">3. Esquema</h3>
+<p><strong>Esquema multifilar de la práctica 5.</strong></p>
+        
+<div class="automata-image">
+     <img id="myImg" src="images_1/multifilar_logo_5.png" alt="Relé programable LOGO!" style="cursor: pointer;">
+</div>
+      
+          </div>
+<div id="myModal" class="modal">
+
+  <span class="close">&times;</span>
+
+  <img class="modal-content" id="img01">
+
+  <div id="caption"></div>
+
+</div>
+<script>
+// Obtener el modal
+var modal = document.getElementById("myModal");
+
+// Obtener la imagen y el elemento dentro del modal
+var img = document.getElementById("myImg");
+var modalImg = document.getElementById("img01");
+var captionText = document.getElementById("caption");
+
+img.onclick = function(){
+  modal.style.display = "block";
+  modalImg.src = this.src;
+  captionText.innerHTML = this.alt;
+}
+
+// Obtener el elemento <span> que cierra el modal
+var span = document.getElementsByClassName("close")[0];
+
+// Cuando el usuario hace clic en <span> (x), cierra el modal
+span.onclick = function() { 
+  modal.style.display = "none";
+}
+
+// Opcional: Cerrar el modal al hacer clic en cualquier parte fuera de la imagen
+window.onclick = function(event) {
+  if (event.target == modal) {
+    modal.style.display = "none";
+  }
+}
+</script>
+</body>
+</html>
